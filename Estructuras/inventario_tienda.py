@@ -5,9 +5,11 @@
 import os                # Para limpiar la consola (os.system)
 import sqlite3           # Para manejar la base de datos SQLite
 from colorama import init, Fore   # Para usar colores en los textos de consola
+from graphviz import Digraph  #import para generar imagenes grafica
 
 # Inicializa colorama 
 init(autoreset=True)
+
 
 
 # ================== BASE DE DATOS ==================
@@ -63,6 +65,7 @@ class NodoProducto:
         self.cantidad = cantidad  # Cantidad en inventario
         self.izq = None           # Nodo hijo izquierdo
         self.der = None           # Nodo hijo derecho
+
 
 class InventarioTienda:
     """Clase que representa el árbol binario de productos"""
@@ -149,17 +152,54 @@ class InventarioTienda:
             print(Fore.YELLOW + f"Código: {nodo.codigo}, Nombre: {nodo.nombre}, Cantidad: {nodo.cantidad}")
             self._inorden(nodo.der)
 
+    # ---------- Graficar árbol con Graphviz ----------
+    def graficar_arbol(self, filename="arbol_inventario"):
+    
+        dot = Digraph(comment="Árbol Binario de Inventario")
 
-# ================== FUNCIÓN PARA DIBUJAR EL ÁRBOL ==================
+    # Forzar orientación de arriba hacia abajo
+        dot.attr(rankdir="TB")
+
+    # Estilo de los nodos
+        dot.attr('node', shape='circle', style='filled', color='lightblue', fontname="Helvetica")
+
+    # Estilo de las aristas
+        dot.attr('edge', arrowsize='0.7')
+
+    # Función recursiva para recorrer el árbol
+        def agregar_nodos(nodo):
+            if nodo is not None:
+                dot.node(str(nodo.codigo), f"{nodo.codigo}\n{nodo.nombre}\nCant: {nodo.cantidad}")
+            if nodo.izq:
+                dot.edge(str(nodo.codigo), str(nodo.izq.codigo), label="Izq")
+                agregar_nodos(nodo.izq)
+            if nodo.der:
+                dot.edge(str(nodo.codigo), str(nodo.der.codigo), label="Der")
+                agregar_nodos(nodo.der)
+
+    # Inicia desde la raíz
+        agregar_nodos(self.raiz)
+
+    # Exporta como imagen PNG
+        dot.render(filename, format="png", cleanup=True)
+        print(f"Árbol guardado como {filename}.png")
+
+    # Abre automáticamente la imagen (opcional en Windows)
+        os.startfile(f"{filename}.png")
+
+
+
+
+# ================== FUNCIÓN PARA DIBUJAR EL ÁRBOL EN TEXTO ==================
 def imprimir_arbol(nodo, nivel=0, prefijo=""):
-    """Imprime el árbol binario"""
+    """Imprime el árbol binario en consola"""
     if nodo is not None:
         # Imprime el nodo con indentación y color azul
-        print(' ' *(4 * nivel)  + Fore.CYAN + f"{prefijo}-> ({nodo.codigo}, {nodo.nombre}, {nodo.cantidad})")
+        print(' ' * (4 * nivel) + Fore.CYAN + f"{prefijo}-> ({nodo.codigo}, {nodo.nombre}, {nodo.cantidad})")
         # Si tiene hijos, imprime recursivamente
         if nodo.izq or nodo.der:
             imprimir_arbol(nodo.izq, nivel + 1, "L-> ")
-            imprimir_arbol(nodo.der, nivel + 1, "R-> ") 
+            imprimir_arbol(nodo.der, nivel + 1, "R-> ")
 
 
 # ================== MENÚ INTERACTIVO ==================
@@ -252,7 +292,8 @@ def menu():
         elif opcion == "6":
             print("\nÁrbol binario actual:")
             imprimir_arbol(inventario.raiz)
-            input(Fore.GREEN + "\nPresione Enter para continuar...")
+            inventario.graficar_arbol("arbol_inventario") 
+            input(Fore.YELLOW + "\n Imagen 'arbol_inventario.png' generada. (revisa el archivo arbol_inventario.png en tu carpeta) Presione Enter para continuar...")
 
         # ---- Opción 7: Salir ----
         elif opcion == "7":
